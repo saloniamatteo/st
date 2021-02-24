@@ -5,6 +5,8 @@ This st build is based off of [Luke Smith's st build](https://github.com/LukeSmi
 NOTE: this version will stay at 0.8.2;
 the new "scroll" feature has been removed (uses good old utmp).
 
+You can get the PKGBUILD [here](https://github.com/saloniamatteo/pkgbuilds/tree/master/st-matteo)
+
 + Patch features:
 	- Added `ALTKEY`;
 	- Bell Volume increased to 100;
