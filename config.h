@@ -5,7 +5,7 @@
  *
  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
  */
-static char *font = "mono:pixelsize=14:antialias=true:autohint=true:hintfull=true";
+static char *font = "FuraCode Nerd Font:pixelsize=15:antialias=true:autohint=true:hintfull=true";
 static char *font2[] = { "JoyPixels:pixelsize=10:antialias=true:autohint=true" };
 static int borderpx = 2;
 
@@ -108,32 +108,39 @@ char *termname = "st-256color";
 unsigned int tabspaces = 8;
 
 /* bg opacity */
-float alpha = 0.8;
+float alpha = 0.9;
 
 /* Terminal colors (16 first used in escape sequence) */
 static const char *colorname[] = {
-	"#282828", /* hard contrast: #1d2021 / soft contrast: #32302f */
-	"#cc241d",
-	"#98971a",
-	"#d79921",
-	"#458588",
-	"#b16286",
-	"#689d6a",
-	"#a89984",
-	"#928374",
-	"#fb4934",
-	"#b8bb26",
-	"#fabd2f",
-	"#83a598",
-	"#d3869b",
-	"#8ec07c",
-	"#ebdbb2",
-	[255] = 0,
+	/* 8 normal colors */
+	[0] = "#000000", /* black   */
+	[1] = "#ff5555", /* red     */
+	[2] = "#50fa7b", /* green   */
+	[3] = "#f1fa8c", /* yellow  */
+	[4] = "#bd93f9", /* blue    */
+	[5] = "#ff79c6", /* magenta */
+	[6] = "#8be9fd", /* cyan    */
+	[7] = "#bbbbbb", /* white   */
+
+	/* 8 bright colors */
+	[8]  = "#44475a", /* black   */
+	[9]  = "#ff5555", /* red     */
+	[10] = "#50fa7b", /* green   */
+	[11] = "#f1fa8c", /* yellow  */
+	[12] = "#bd93f9", /* blue    */
+	[13] = "#ff79c6", /* magenta */
+	[14] = "#8be9fd", /* cyan    */
+	[15] = "#ffffff", /* white   */
+
+	/* special colors */
+	[256] = "#282a36", /* background */
+	[257] = "#f8f8f2", /* foreground */
+
 	/* more colors can be added after 255 to use with DefaultXX */
 	"#add8e6", /* 256 -> cursor */
 	"#555555", /* 257 -> rev cursor*/
-	"#282828", /* 258 -> bg */
-	"#ebdbb2", /* 259 -> fg */
+	"#282a36", /* 258 -> bg */
+	"#f8f8f2", /* 259 -> fg */
 };
 
 
@@ -141,10 +148,18 @@ static const char *colorname[] = {
  * Default colors (colorname index)
  * foreground, background, cursor, reverse cursor
  */
-unsigned int defaultfg = 259;
+unsigned int defaultfg = 257;
 unsigned int defaultbg = 258;
-unsigned int defaultcs = 256;
+unsigned int defaultcs = 257;
 unsigned int defaultrcs = 257;
+
+/*
+ * Colors used, when the specific fg == defaultfg. So in reverse mode this
+ * will reverse too. Another logic would only make the simple feature too
+ * complex.
+ */
+unsigned int defaultitalic = 7;
+unsigned int defaultunderline = 7;
 
 /*
  * Default shape of cursor
@@ -246,7 +261,9 @@ static Shortcut shortcuts[] = {
 	{ ShiftMask,            XK_Print,       printscreen,    {.i =  0} },
 	{ XK_ANY_MOD,           XK_Print,       printsel,       {.i =  0} },
 	{ TERMMOD,              XK_Prior,       zoom,           {.f = +1} },
+	{ TERMMOD,              XK_asterisk,    zoom,           {.f = +1} },
 	{ TERMMOD,              XK_Next,        zoom,           {.f = -1} },
+	{ TERMMOD,              XK_underscore,  zoom,           {.f = -1} },
 	{ MODKEY,               XK_Home,        zoomreset,      {.f =  0} },
 	{ ALTKEY,               XK_c,           clipcopy,       {.i =  0} },
 	{ ShiftMask,            XK_Insert,      clippaste,      {.i =  0} },
