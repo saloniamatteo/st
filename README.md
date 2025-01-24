@@ -7,7 +7,11 @@ the new "scroll" feature has been removed (uses good old utmp).
 
 You can get the PKGBUILD [here](https://github.com/saloniamatteo/pkgbuilds/tree/master/st-matteo)
 
-+ Patch features:
+Default fonts:
+	- Iosevka Term (size 30)
+	- Emojis: JoyPixels (size 30)
+
+Patch features:
 	- Added `ALTKEY`;
 	- Bell Volume increased to 100;
 	- Change alpha with <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd>/<kbd>S</kbd>;
