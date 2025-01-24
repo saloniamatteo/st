@@ -2,6 +2,8 @@
 
 This st build is based off of [Luke Smith's st build](https://github.com/LukeSmithxyz/st). I have applied my own patches.
 
+![Screenshot](Screenshot.png)
+
 NOTE: this version will stay at 0.8.2;
 the new "scroll" feature has been removed (uses good old utmp).
 
