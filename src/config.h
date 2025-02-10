@@ -6,7 +6,7 @@
  * NOTE: tweak the 'pixelsize' values if you have a smaller display
  * these values were set for a 2560x1440 display with 190 DPI
  */
-static char *font = "Iosevka Term:pixelsize=30:antialias=true:autohint=true:hintfull=true";
+static char *font = "Iosevka Curly:pixelsize=30:antialias=true:autohint=true";
 static char *font2[] = { "JoyPixels:pixelsize=30:antialias=true:autohint=true" };
 static int borderpx = 2;
 
