@@ -1,13 +1,11 @@
-## st-matteo
+## st
 
-This st build is based off of [Luke Smith's st build](https://github.com/LukeSmithxyz/st). I have applied my own patches.
+This [st](https://st.suckless.org) build is based off of [Luke Smith's build](https://github.com/LukeSmithxyz/st).
+I have applied my own patches.
 
 ![Screenshot](Screenshot.png)
 
-NOTE: this version will stay at 0.8.2;
-the new "scroll" feature has been removed (uses good old utmp).
-
-You can get the PKGBUILD [here](https://github.com/saloniamatteo/pkgbuilds/tree/master/st-matteo)
+NOTE: this version will stay at 0.8.2.
 
 Default fonts:
   - Iosevka Curly (size 30)
@@ -15,7 +13,7 @@ Default fonts:
 
 Patch features:
   - Added `ALTKEY`;
-  - Bell Volume increased to 100;
+  - Bell Volume set to 50;
   - Change alpha with <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd>/<kbd>S</kbd>;
   - Copy with <kbd>Alt</kbd>+<kbd>C</kbd>, Paste with <kbd>Alt</kbd>+<kbd>V</kbd>;
   - `CopyOutput` now uses <kbd>Alt</kbd>+<kbd>Ctrl</kbd>+<kbd>O</kbd>;
