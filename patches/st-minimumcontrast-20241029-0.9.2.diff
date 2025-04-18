@@ -1,0 +1,247 @@
+From b0601465dc4d654485db7c3bcb28e019b21e78ca Mon Sep 17 00:00:00 2001
+From: Nick Lott <nick.lott@gmail.com>
+Date: Sun, 13 Oct 2024 11:14:38 +1300
+Subject: [PATCH] Add minimum contrast ratio feature
+
+---
+ Makefile     |   2 +-
+ config.def.h |   6 +++
+ contrast.c   | 146 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ contrast.h   |  11 ++++
+ x.c          |  12 +++++
+ 5 files changed, 176 insertions(+), 1 deletion(-)
+ create mode 100644 contrast.c
+ create mode 100644 contrast.h
+
+diff --git a/Makefile b/Makefile
+index 15db421..893c71b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -4,7 +4,7 @@
+ 
+ include config.mk
+ 
+-SRC = st.c x.c
++SRC = st.c x.c contrast.c
+ OBJ = $(SRC:.c=.o)
+ 
+ all: st
+diff --git a/config.def.h b/config.def.h
+index 2cd740a..03eed3a 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -134,6 +134,12 @@ unsigned int defaultbg = 259;
+ unsigned int defaultcs = 256;
+ static unsigned int defaultrcs = 257;
+ 
++
++/*
++* Minimum contrast ratio (1-21)
++*/
++const float min_contrast_ratio = 2.2f;
++
+ /*
+  * Default shape of cursor
+  * 2: Block ("█")
+diff --git a/contrast.c b/contrast.c
+new file mode 100644
+index 0000000..d956bd6
+--- /dev/null
++++ b/contrast.c
+@@ -0,0 +1,146 @@
++#include <math.h>
++
++#include "contrast.h"
++
++
++/* Linear RGB floating point color space for use in calculations  */
++typedef struct {
++	float r;
++	float g;
++	float b;
++	float l;
++} RGBf;
++
++
++
++static float
++sRGB_to_lin(const unsigned short c)
++{
++	/* Convert to normalized float. */
++	const float f = c / 65535.0f;
++
++	/* Convert from sRGB to linear space. */
++	return (f <= 0.03928f) ? f / 12.92f : pow((f + 0.055f) / 1.055f, 2.4f);
++}
++
++
++
++static unsigned short
++lin_to_sRGB(const float c)
++{
++	/* Convert to sRGB space. */
++	const float f = (c <= 0.0031308f) ?
++	                      12.92f * c : 1.055f * pow(c, 1.0f / 2.4f) - 0.055f;
++
++	/* Clamp and convert back to 16-bit values. */
++	return	(unsigned short)(fminf(fmaxf(f * 65535.0f, 0.0f), 65535.0f));
++}
++
++
++
++static RGBf
++XftColor_to_RGBf( XftColor const * const c )
++{
++	const float r = sRGB_to_lin(c->color.red);
++	const float g = sRGB_to_lin(c->color.green);
++	const float b = sRGB_to_lin(c->color.blue);
++
++	/* Calculate luminance. */
++	const float l = 0.2126f * r + 0.7152f * g + 0.0722f * b;
++
++	return (RGBf) {r, g, b, l};
++}
++
++
++
++static void
++RGBf_to_XftColor( const RGBf rgb, XftColor * const c)
++{
++	c->color.red   = lin_to_sRGB(rgb.r);
++	c->color.green = lin_to_sRGB(rgb.g);
++	c->color.blue  = lin_to_sRGB(rgb.b);
++}
++
++
++
++static float
++get_luminance(XftColor const * const c)
++{
++	const RGBf rgb = XftColor_to_RGBf(c);
++	return rgb.l;
++}
++
++
++
++static float
++get_contrast_ratio(const float fg_lum, const float bg_lum)
++{
++	if (fg_lum > bg_lum) {
++		return (fg_lum + 0.05f) / (bg_lum + 0.05f);
++	} else {
++		return (bg_lum + 0.05f) / (fg_lum + 0.05f);
++	}
++}
++
++
++
++static void
++adjust_luminance(XftColor * const c, const float adjustment)
++{
++	/* Convert sRGB to linear space and calculate luminance. */
++	RGBf rgb = XftColor_to_RGBf(c);
++
++	/* Adjust luminance, clamping to 0-100% */
++	const float factor = fminf(fmaxf(rgb.l + adjustment, 0.0f), 1.0f) / rgb.l;
++	rgb.r *= factor;
++	rgb.g *= factor;
++	rgb.b *= factor;
++
++	/* Convert back to sRGB space. */
++	RGBf_to_XftColor(rgb, c);
++}
++
++
++static float
++get_luminance_adjustment( float fl, float bl, float contrast )
++{
++	/* Increase existing any luminance difference to get contrast. */
++	float adjustment = (bl > fl)?
++	          ((((bl + 0.05f) / min_contrast_ratio) - 0.05f) - fl) :
++	          (((min_contrast_ratio * (bl + 0.05f)) - 0.05f) - fl);
++
++	const float new_lum = fl + adjustment;
++
++	/* Use the opposite direction if we exceed valid luminance range. */
++	if (new_lum < 0.0 || new_lum > 1.0) {
++		adjustment = (bl <= fl)?
++		    ((((bl + 0.05f) / min_contrast_ratio) - 0.05f) - fl) :
++		    (((min_contrast_ratio * (bl + 0.05f)) - 0.05f) - fl);
++	}
++
++	return adjustment;
++}
++
++
++void
++adjust_color_for_contrast(XftColor * const fg, XftColor * const bg)
++{
++	float fl = get_luminance(fg);
++	const float bl = get_luminance(bg);
++	const float contrast = get_contrast_ratio(fl, bl);
++
++	if (contrast < min_contrast_ratio) {
++		/* Change black to dark grey so the luminance calculations can work. */
++		if (fl < 0.00001) {
++			fg->color.red   = 0x1fff;
++			fg->color.green = 0x1fff;
++			fg->color.blue  = 0x1fff;
++			fl = get_luminance(fg);
++		}
++
++		const float adjustment = get_luminance_adjustment(
++		                             fl, bl, min_contrast_ratio);
++
++		adjust_luminance(fg, adjustment);
++	}
++}
+diff --git a/contrast.h b/contrast.h
+new file mode 100644
+index 0000000..2aa6dd3
+--- /dev/null
++++ b/contrast.h
+@@ -0,0 +1,11 @@
++#ifndef __ST_CONTRAST_H_
++#define __ST_CONTRAST_H_
++
++#include <X11/Xft/Xft.h>
++
++void adjust_color_for_contrast(XftColor * const , XftColor * const );
++
++/* config.h globals */
++extern const float min_contrast_ratio;
++
++#endif
+diff --git a/x.c b/x.c
+index bd23686..4c79e52 100644
+--- a/x.c
++++ b/x.c
+@@ -19,6 +19,7 @@ char *argv0;
+ #include "arg.h"
+ #include "st.h"
+ #include "win.h"
++#include "contrast.h"
+ 
+ /* types used in config.h */
+ typedef struct {
+@@ -1478,6 +1479,17 @@ xdrawglyphfontspecs(const XftGlyphFontSpec *specs, Glyph base, int len, int x, i
+ 	if (winy + win.ch >= borderpx + win.th)
+ 		xclear(winx, winy + win.ch, winx + width, win.h);
+ 
++
++	/*
++	 * Adjust colours to enforce a minimum contrast. Using the local truefg/bg
++	 * here to ensure we don't alter the dc.cols table permanently.
++	 */
++	fg = memcpy( &truefg, fg, sizeof(Color));
++	bg = memcpy( &truebg, bg, sizeof(Color));
++
++	adjust_color_for_contrast( fg, bg);
++
++
+ 	/* Clean up the region we want to draw to. */
+ 	XftDrawRect(xw.draw, bg, winx, winy, width, win.ch);
+ 
+-- 
+2.34.1
+

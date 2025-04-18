@@ -1,0 +1,52 @@
+diff --git a/config.def.h b/config.def.h
+index 8b25d40..6769f99 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -201,8 +201,8 @@ static Shortcut shortcuts[] = {
+ 	{ TERMMOD,              XK_Y,           selpaste,       {.i =  0} },
+ 	{ ShiftMask,            XK_Insert,      selpaste,       {.i =  0} },
+ 	{ TERMMOD,              XK_Num_Lock,    numlock,        {.i =  0} },
+-	{ ShiftMask,            XK_Page_Up,     kscrollup,      {.i = -1} },
+-	{ ShiftMask,            XK_Page_Down,   kscrolldown,    {.i = -1} },
++	{ ShiftMask,            XK_Page_Up,     kscrollup,      {.f = -0.1} },
++	{ ShiftMask,            XK_Page_Down,   kscrolldown,    {.f = -0.1} },
+ };
+ 
+ /*
+diff --git a/st.c b/st.c
+index a3b3c9d..5a93594 100644
+--- a/st.c
++++ b/st.c
+@@ -1087,14 +1087,14 @@ tswapscreen(void)
+ void
+ kscrollup(const Arg *a)
+ {
+-	int n = a->i;
++	float n = a->f;
+ 
+ 	if (IS_SET(MODE_ALTSCREEN))
+ 		return;
+ 
+-	if (n < 0) n = (-n) * term.row;
++	if (n < 0) n = MAX((-n) * term.row, 1);
+ 	if (n > TSCREEN.size - term.row - TSCREEN.off) n = TSCREEN.size - term.row - TSCREEN.off;
+-	while (!TLINE(-n)) --n;
++	while (!TLINE((int)-n)) --n;
+ 	TSCREEN.off += n;
+ 	selscroll(0, n);
+ 	tfulldirt();
+@@ -1104,12 +1104,12 @@ void
+ kscrolldown(const Arg *a)
+ {
+ 
+-	int n = a->i;
++	float n = a->f;
+ 
+ 	if (IS_SET(MODE_ALTSCREEN))
+ 		return;
+ 
+-	if (n < 0) n = (-n) * term.row;
++	if (n < 0) n = MAX((-n) * term.row, 1);
+ 	if (n > TSCREEN.off) n = TSCREEN.off;
+ 	TSCREEN.off -= n;
+ 	selscroll(0, -n);
